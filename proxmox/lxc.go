@@ -5,8 +5,8 @@ type Lxc struct {
 	Cpu float64 	`json:"cpu"`
 	Cpus int 		`json:"cpus,string"`
 	Disk int64		`json:"disk"`
-	DiskRead int64	`json:"diskread"`
-	DiskWrite int64	`json:"diskwrite"`
+	DiskRead int64	`json:"diskread,string"`
+	DiskWrite int64	`json:"diskwrite,string"`
 	MaxDisk	int64	`json:"maxdisk"`
 	MaxMem	int64	`json:"maxmem"`
 	MaxSwap int64	`json:"maxswap"`

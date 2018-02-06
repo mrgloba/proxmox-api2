@@ -7,7 +7,7 @@ import (
 	"time"
 	"fmt"
 	"strings"
-	"github.com/kataras/iris/core/errors"
+	"errors"
 	"io/ioutil"
 	"encoding/json"
 	"reflect"

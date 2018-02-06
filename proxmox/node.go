@@ -21,7 +21,7 @@ type Node struct {
 	BasicObject
 }
 
-func (n *Node) GetStorages() ([]Storage,error){
+func (n *Node) GetStorageList() ([]Storage,error){
 	target,err := n.px.makeAPITarget("nodes/" + n.Node + "/storage")
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func (n *Node) GetStorages() ([]Storage,error){
 	return storages, nil
 }
 
-func (n *Node) GetLxcsis() ([]Lxc,error) {
+func (n *Node) GetLxcList() ([]Lxc,error) {
 	target,err := n.px.makeAPITarget("nodes/" + n.Node + "/lxc")
 	if err != nil {
 		return nil, err

@@ -1,7 +1,7 @@
-###Proxmox
+### Proxmox
 * [x] Base object (API Ticket, Perform Requests, etc)
-* [x] Node
-* [x] Storage
+* [ ] Node
+* [ ] Storage
 * [ ] Cluster
 * [ ] Access
 * [ ] Pools

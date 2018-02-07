@@ -14,6 +14,8 @@ const (
 	TEST_PROXMOX_USER  = "root"
 	TEST_PROXMOX_PASS  = "ZcFhkl98@$3"
 	TEST_PROXMOX_REALM = "pam"
+
+	DEBUG_TESTS = true
 )
 
 var server *Proxmox

@@ -121,6 +121,30 @@ func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]
 
 }
 
+func (px *Proxmox) APICall2(method string, target string, data url.Values, result interface{}) (int, error) {
+	apitarget,err := px.makeAPITarget(target)
+	if err != nil {
+		return 0, err
+	}
+
+	responseData, httpCode, err := px.APICall("GET", apitarget, data)
+	if err != nil {
+		return 0, err
+	}
+	if httpCode != 200 {
+		return httpCode, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+
+	jsonErr := px.dataUnmarshal(responseData, result)
+
+	if jsonErr != nil {
+		return httpCode, jsonErr
+	}
+
+	return httpCode, nil
+}
+
 func (px *Proxmox) makeAPITarget(path string) (APITarget, error){
 
 	apiUrl := "https://" + px.host + ":" +px.port

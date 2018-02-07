@@ -3,6 +3,7 @@ package proxmox
 import (
 	"fmt"
 	"errors"
+	"strconv"
 )
 
 type Node struct {
@@ -22,12 +23,13 @@ type Node struct {
 }
 
 func (n *Node) GetStorageList() ([]Storage,error){
-	target,err := n.px.makeAPITarget("nodes/" + n.Node + "/storage")
-	if err != nil {
-		return nil, err
-	}
 
-	responseData, httpCode, err := n.px.APICall("GET", target, nil)
+
+	target := "nodes/" + n.Node + "/storage"
+
+	var storageList []Storage
+
+	httpCode, err := n.px.APICall2("GET", target, nil, &storageList)
 	if err != nil {
 		return nil, err
 	}
@@ -35,24 +37,16 @@ func (n *Node) GetStorageList() ([]Storage,error){
 		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
 	}
 
-	var storages []Storage
 
-	jsonErr := n.px.dataUnmarshal(responseData, &storages)
-
-	if jsonErr != nil {
-		return nil, jsonErr
-	}
-
-	return storages, nil
+	return storageList, nil
 }
 
 func (n *Node) GetLxcList() ([]Lxc,error) {
-	target,err := n.px.makeAPITarget("nodes/" + n.Node + "/lxc")
-	if err != nil {
-		return nil, err
-	}
+	target := "nodes/" + n.Node + "/lxc"
 
-	responseData, httpCode, err := n.px.APICall("GET", target, nil)
+	var lxcList []Lxc
+
+	httpCode, err := n.px.APICall2("GET", target, nil, &lxcList)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +54,32 @@ func (n *Node) GetLxcList() ([]Lxc,error) {
 		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
 	}
 
-	var lxcs []Lxc
 
-	jsonErr := n.px.dataUnmarshal(responseData, &lxcs)
+	return lxcList, nil
+}
 
-	if jsonErr != nil {
-		return nil, jsonErr
+func (n *Node) GetLxc(vmid int64) (*Lxc,error) {
+	lxcList, err := n.GetLxcList()
+	if err != nil {
+		return nil, err
 	}
 
-	return lxcs, nil
+	for _,v := range lxcList {
+		if v.VmId == vmid {
+			lxc := v
+			return &lxc, nil
+
+		}
+	}
+
+	return nil, errors.New("Lxc container VMID: " + strconv.Itoa(int(vmid)) + " not found.")
 }
+
+func (n *Node) DeleteLxc(vmid int64) error {
+	return nil
+}
+
+func (n *Node) CreateLxc() error {
+
+}
+

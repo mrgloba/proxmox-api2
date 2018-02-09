@@ -87,7 +87,7 @@ func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]
 		return nil, 0, err
 	}
 
-	if method == "GET" {
+	if method == "GET" || method == "DELETE" {
 		request.Header.Add("CSRFPreventionToken",px.csrftoken)
 	}
 

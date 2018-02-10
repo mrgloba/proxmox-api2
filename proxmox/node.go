@@ -1,10 +1,12 @@
 package proxmox
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"strconv"
 )
+
+
 
 type Node struct {
 	Cpu float64			`json:"cpu"`
@@ -119,7 +121,38 @@ searchdomain:test.loc
 nameserver:8.8.8.8
  */
 
-func (n *Node) CreateLxc() error {
-return nil
+func (n *Node) CreateLxc(lxcParams CreateLxcParams) (*TaskID, error) {
+	err := lxcParams.Validate()
+	if err != nil {
+		return nil,err
+	}
+
+	target := "nodes/" + n.Node + "/lxc"
+
+	apitarget,err := n.px.makeAPITarget(target)
+	if err != nil {
+		return nil,err
+	}
+
+	data := lxcParams.GetUrlDataValues()
+
+	responseData, httpCode, err := n.px.APICall("CREATE", apitarget, data)
+	if err != nil {
+		return nil,err
+	}
+	if httpCode != 200 {
+		return nil,errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+
+	var taskID TaskID
+
+	jsonErr := n.px.dataUnmarshal(responseData,&taskID)
+	if jsonErr != nil {
+		return nil,jsonErr
+	}
+
+	return &taskID, nil
+
 }
 

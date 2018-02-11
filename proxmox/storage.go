@@ -1,6 +1,15 @@
 package proxmox
 
 
+type BaseStorageItem struct {
+	ACL bool
+	Backup bool
+	Quota bool
+	ReadOnly bool
+	Shared bool
+	Size int
+}
+
 type Storage struct {
 	Content string		`json:"content"`
 	Digest string		`json:"digest"`

@@ -15,6 +15,8 @@ const (
 	TEST_PROXMOX_PASS  = "ZcFhkl98@$3"
 	TEST_PROXMOX_REALM = "pam"
 
+	TEST_PROXMOX_VMID = 999
+
 	DEBUG_TESTS = true
 )
 

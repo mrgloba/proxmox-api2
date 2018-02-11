@@ -1,9 +1,13 @@
 package proxmox
 
 import (
-	"net/url"
 	"errors"
 	"fmt"
+	"net/url"
+	"regexp"
+	"strings"
+	"strconv"
+	"reflect"
 )
 
 const (
@@ -21,7 +25,7 @@ const (
 
 )
 
-type Lxc struct {
+type LxcBase struct {
 	Cpu float64 	`json:"cpu"`
 	Cpus int 		`json:"cpus,string"`
 	Disk int64		`json:"disk"`
@@ -34,45 +38,39 @@ type Lxc struct {
 	Name string		`json:"name"`
 	NetIn int64		`json:"netin"`
 	NetOut int64	`json:"netout"`
-	Pid int			`json:"pid,string"`
 	Status string	`json:"status"`
 	Swap int64		`json:"swap"`
 	Template string	`json:"template"`
 	Type string		`json:"type"`
 	Uptime int64	`json:"uptime"`
 	VmId int64		`json:"vmid,string"`
+}
 
+type LxcStatus struct {
+	HA map[string]interface{} `json:"ha"`
+	LxcBase
+}
+
+type Lxc struct {
+	Pid int			`json:"pid,string"`
+	LxcBase
 	BasicObject
 }
 
-type BaseStorageParams struct {
-	ACL bool
-	Backup bool
-	Quota bool
-	ReadOnly bool
-	Shared bool
-	Size int
-}
-
-type MountPointParams struct {
+type MountPoint struct {
 	Index int
 	Volume string
 	Path string
-	BaseStorageParams
+	BaseStorageItem
 }
 
-type RootFSParams struct {
-	Volume string
-	BaseStorageParams
-}
-
-type StartupParams struct {
+type StartupConfig struct {
 	Order int
 	UpDelay int
 	DownDelay int
 }
 
-type NetworkParams {
+type NetworkConfig struct {
 	Index int
 	Name string
 	Bridge string
@@ -89,42 +87,111 @@ type NetworkParams {
 	Type string
 }
 
-type CreateLxcParams struct {
-	Arch string
-	CMode string
-	Console bool
-	Cores int
-	CpuLimit int
-	CpuUnits int
-	Description string
-	Force bool
-	Hostname string
-	Lock string
-	Memory int
-	NameServer string
-	OnBoot bool
-	OSTemplate string
-	OSType string
-	Password string
-	Pool string
-	Protection bool
-	Restore bool
-	SearchDomain string
-	Storage string
-	Swap int
-	Template bool
-	Tty int
-	Unprivileged bool
-	VmId int64
-
-	MountPoints []MountPointParams
-	RootFS RootFSParams
-	Networks []NetworkParams
-	Startup StartupParams
+type BaseLxcConfig struct {
+	Arch string				`json:"arch"`
+	CMode string			`json:"cmode"`
+	Console bool			`json:"console"`
+	Cores int				`json:"cores"`
+	CpuLimit int			`json:"cpulimit"`
+	CpuUnits int			`json:"cpuunits"`
+	Description string		`json:"description"`
+	Force bool				`json:"force"`
+	Hostname string			`json:"hostname"`
+	Lock string				`json:"lock"`
+	Memory int				`json:"memory"`
+	NameServer string		`json:"nameserver"`
+	OnBoot bool				`json:"onboot"`
+	OSTemplate string		`json:"ostemplate"`
+	OSType string			`json:"ostype"`
+	Password string			`json:"password"`
+	Pool string				`json:"pool"`
+	Protection bool			`json:"protection"`
+	Restore bool			`json:"restore"`
+	SearchDomain string		`json:"search_domain"`
+	Storage string			`json:"storage"`
+	Swap int				`json:"swap"`
+	Template bool			`json:"template"`
+	Tty int					`json:"tty"`
+	Unprivileged bool		`json:"unprivileged"`
+	VmId int64				`json:"vmid"`
+	RootFS string 			`json:"rootfs"`
 }
 
+type LxcConfigReceiver struct {
+	mp0 string `json:"mp0"`
+	mp1 string `json:"mp1"`
+	mp2 string `json:"mp2"`
+	mp3 string `json:"mp3"`
+	mp4 string `json:"mp4"`
+	mp5 string `json:"mp5"`
+	mp6 string `json:"mp6"`
+	mp7 string `json:"mp7"`
+	mp8 string `json:"mp8"`
+	mp9 string `json:"mp9"`
 
-func (clp *CreateLxcParams) Validate() error {
+	net0 string `json:"net0"`
+	net1 string `json:"net1"`
+	net2 string `json:"net2"`
+	net3 string `json:"net3"`
+	net4 string `json:"net4"`
+	net5 string `json:"net5"`
+	net6 string `json:"net6"`
+	net7 string `json:"net7"`
+	net8 string `json:"net8"`
+	net9 string `json:"net9"`
+
+	startup string`json:"startup"`
+
+	lxc []interface{} `json:"lxc"`
+
+	BaseLxcConfig
+}
+
+type LxcConfig struct {
+
+	MountPoints []MountPoint
+	Networks []NetworkConfig
+	Startup StartupConfig
+
+	BaseLxcConfig
+}
+
+func (lcr *LxcConfigReceiver) Parse() (*LxcConfig){
+
+	lxcConfig := LxcConfig{ BaseLxcConfig: lcr.BaseLxcConfig}
+
+	if len(lcr.startup) > 0 {
+
+		lxcConfig.Startup = StartupConfig{}
+		keyval := strings.Split(lcr.startup,",")
+
+		for _, kvpair := range keyval {
+			params := strings.Split(kvpair,"=")
+
+			if len(params) == 2 {
+				switch params[0] {
+				case "order":
+					lxcConfig.Startup.Order, _ = strconv.Atoi(params[1])
+				case "up":
+					lxcConfig.Startup.UpDelay, _ = strconv.Atoi(params[1])
+				case "down":
+					lxcConfig.Startup.DownDelay, _ = strconv.Atoi(params[1])
+				}
+			}
+		}
+	}
+
+	rlcrv := reflect.ValueOf(*lcr)
+	rlcrt := reflect.TypeOf(*lcr)
+//todo: end
+	for i:=0; i<rlcrv.NumField(); i++ {
+		fmt.Printf("%v\n",rlcrt.Field(i))
+	}
+
+	return nil
+}
+
+func (clp *LxcConfig) Validate() error {
 	if clp.Arch != "" && clp.Arch != LXC_ARCH_AMD64 && clp.Arch != LXC_ARCH_I386 {
 		return errors.New(fmt.Sprintf("Arch has wrong value. Posible values is: %s or %s or empty", LXC_ARCH_I386, LXC_ARCH_AMD64))
 	}
@@ -167,7 +234,7 @@ func (clp *CreateLxcParams) Validate() error {
 		return errors.New("Password length couldn ot be less than 6")
 	}
 
-	if clp.RootFS == (RootFSParams{}) {
+	if len(clp.RootFS) == 0 {
 		return errors.New("RootFS could not be zero")
 	}
 
@@ -178,6 +245,10 @@ func (clp *CreateLxcParams) Validate() error {
 	return nil
 }
 
-func (clp *CreateLxcParams) GetUrlDataValues() url.Values {
+func (clp *LxcConfig) GetUrlDataValues() url.Values {
+
+	reg,_:=regexp.Compile("([a-z]+)=")
+	reg.ReplaceAllString("","\"$1\"")
+
 	return url.Values{}
 }

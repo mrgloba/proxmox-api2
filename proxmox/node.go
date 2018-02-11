@@ -121,7 +121,7 @@ searchdomain:test.loc
 nameserver:8.8.8.8
  */
 
-func (n *Node) CreateLxc(lxcParams CreateLxcParams) (*TaskID, error) {
+func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 	err := lxcParams.Validate()
 	if err != nil {
 		return nil,err

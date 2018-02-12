@@ -16,10 +16,9 @@ const (
 	TEST_PROXMOX_REALM = "pam"
 
 	TEST_PROXMOX_VMID = 999
-
-	DEBUG_TESTS = true
 )
 
+var DEBUG_TESTS bool = true
 var server *Proxmox
 
 func TestMain(m *testing.M) {

@@ -105,22 +105,6 @@ func (n *Node) RemoveLxc(vmid int64) (*TaskID, error) {
 	return &taskID, nil
 }
 
-
-
-/*
-vmid:999
-hostname:test
-password:111111
-ostemplate:local:vztmpl/debian-9.0-standard_9.0-2_amd64.tar.gz
-rootfs:storage:8
-cores:2
-memory:1024
-swap:512
-net0:bridge=vmbr0,name=eth0,ip=10.10.10.0/24,gw=10.10.10.1,tag=99
-searchdomain:test.loc
-nameserver:8.8.8.8
- */
-
 func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 	err := lxcParams.Validate()
 	if err != nil {
@@ -136,7 +120,7 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	data := lxcParams.GetUrlDataValues()
 
-	responseData, httpCode, err := n.px.APICall("CREATE", apitarget, data)
+	responseData, httpCode, err := n.px.APICall("POST", apitarget, data)
 	if err != nil {
 		return nil,err
 	}
@@ -154,5 +138,22 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	return &taskID, nil
 
+}
+
+func (n *Node) GetTasks() ([]Task, error) {
+	target := "nodes/" + n.Node + "/tasks"
+
+	var tasks []Task
+
+	httpCode, err := n.px.APICall2("GET", target, nil, &tasks)
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+
+	return tasks, nil
 }
 

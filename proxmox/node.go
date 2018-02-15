@@ -7,7 +7,6 @@ import (
 )
 
 
-
 type Node struct {
 	Cpu float64			`json:"cpu"`
 	Disk int64			`json:"disk"`

@@ -29,15 +29,105 @@ type LxcConfig struct {
 }
 
 
-func (lxc *Lxc) Start() (*TaskID, error){
-	target
+
+func (lxc *Lxc) Start(skiplock bool) (*TaskID, error){
+	target := "nodes/" + lxc.parent.(*Node).Node + "/lxc/" + strconv.Itoa(int(lxc.VmId)) + "/status/start"
+
+	var taskID TaskID
+
+	var data url.Values
+
+	data = nil
+
+	if skiplock {
+		data = make(url.Values)
+		data.Add("skiplock","1")
+	}
+
+	httpCode, err := lxc.parent.(*Node).parent.(*Proxmox).APICall2("POST",target, data, &taskID, nil)
+
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return &taskID, nil
 }
 
-func (lxc *Lxc) Stop() (*TaskID, error){}
+func (lxc *Lxc) Stop(skiplock bool) (*TaskID, error){
+	target := "nodes/" + lxc.parent.(*Node).Node + "/lxc/" + strconv.Itoa(int(lxc.VmId)) + "/status/stop"
 
-func (lxc *Lxc) Shutdown() (*TaskID, error){}
+	var taskID TaskID
 
-func (lxc *Lxc) GetStatus() (*LxcStatus, error) {}
+	var data url.Values
+
+	data = nil
+
+	if skiplock {
+		data = make(url.Values)
+		data.Add("skiplock","1")
+	}
+
+	httpCode, err := lxc.parent.(*Node).parent.(*Proxmox).APICall2("POST",target, data, &taskID, nil)
+
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return &taskID, nil
+}
+
+func (lxc *Lxc) Shutdown(forceStop bool, timeout int) (*TaskID, error){
+	target := "nodes/" + lxc.parent.(*Node).Node + "/lxc/" + strconv.Itoa(int(lxc.VmId)) + "/status/shutdown"
+
+	var taskID TaskID
+
+	var data url.Values
+
+	data = make(url.Values)
+
+	if forceStop {
+		data.Add("forceStop","1")
+	}
+
+	if timeout > 0 {
+		data.Add("timeout",strconv.Itoa(timeout))
+	}
+
+	httpCode, err := lxc.parent.(*Node).parent.(*Proxmox).APICall2("POST",target, data, &taskID, nil)
+
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return &taskID, nil
+}
+
+func (lxc *Lxc) GetStatus() (*LxcStatus, error) {
+	target := "nodes/" + lxc.parent.(*Node).Node + "/lxc/" + strconv.Itoa(int(lxc.VmId)) + "/status/current"
+
+	var lxcStatus LxcStatus
+
+	httpCode, err := lxc.parent.(*Node).parent.(*Proxmox).APICall2("POST",target, nil, &lxcStatus, nil)
+
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return &lxcStatus, nil
+}
+
 
 func (clp *LxcConfig) Validate() error {
 	if clp.Arch != "" && clp.Arch != LXC_ARCH_AMD64 && clp.Arch != LXC_ARCH_I386 {
@@ -49,7 +139,7 @@ func (clp *LxcConfig) Validate() error {
 	}
 
 	if clp.Cores <1 || clp.Cores >128 {
-		return errors.New("Cores has wrong value. It shuld be 1-128")
+		return errors.New("cores has wrong value. it shuld be 1-128")
 	}
 
 	if clp.CpuLimit <0 || clp.CpuLimit >128 {
@@ -71,7 +161,7 @@ func (clp *LxcConfig) Validate() error {
 	}
 
 	if clp.Memory < 16 {
-		return errors.New("Memory has wrong value. It shuld be 16-N")
+		return errors.New("memory has wrong value. It shuld be 16-N")
 	}
 
 	if len(clp.OSTemplate) == 0 {
@@ -79,7 +169,7 @@ func (clp *LxcConfig) Validate() error {
 	}
 
 	if len(clp.Password) < 6 {
-		return errors.New("Password length couldn ot be less than 6")
+		return errors.New("password length could not be less than 6")
 	}
 
 	if len(clp.RootFS) == 0 {

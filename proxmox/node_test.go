@@ -47,7 +47,7 @@ func TestNode_GetLxcList(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "Get Lxcsis",
+			name:    "GetLxcList",
 			wantErr: false,
 		},
 		// TODO: Add test cases.
@@ -120,47 +120,6 @@ func TestNode_GetLxc(t *testing.T) {
 	}
 }
 
-func TestNode_RemoveLxc(t *testing.T) {
-	type args struct {
-		vmid int64
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name:    "Remove test lxc",
-			args:    args{TEST_PROXMOX_VMID},
-			wantErr: false,
-		},
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			nodes, err := server.GetNodes()
-			if err != nil {
-				t.Log(err.Error())
-				return
-			}
-
-			got, err := nodes[0].RemoveLxc(tt.args.vmid)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Node.RemoveLxc() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if DEBUG_TESTS {
-				t.Logf("Lxc: %v\n", *got)
-			}
-
-			if strings.Index(string(*got), nodes[0].Node) <= 0 {
-				t.Errorf("Node.RemoveLxc() = %v", got)
-			}
-		})
-	}
-}
-
 func TestNode_CreateLxc(t *testing.T) {
 	type args struct {
 		lxcParams LxcConfig
@@ -228,6 +187,48 @@ func TestNode_CreateLxc(t *testing.T) {
 		})
 	}
 }
+
+func TestNode_RemoveLxc(t *testing.T) {
+	type args struct {
+		vmid int64
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name:    "Remove test lxc",
+			args:    args{TEST_PROXMOX_VMID},
+			wantErr: false,
+		},
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			got, err := nodes[0].RemoveLxc(tt.args.vmid)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Node.RemoveLxc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if DEBUG_TESTS {
+				t.Logf("Lxc: %v\n", *got)
+			}
+
+			if strings.Index(string(*got), nodes[0].Node) <= 0 {
+				t.Errorf("Node.RemoveLxc() = %v", got)
+			}
+		})
+	}
+}
+
 
 func TestNode_GetTasks(t *testing.T) {
 	tests := []struct {

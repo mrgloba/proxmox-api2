@@ -14,12 +14,16 @@ import (
 )
 
 const (
-	PROXMOX_HTTP_TIMEOUT = 5
-	PROXMOX_API_TARGET = "/api2/json/"
-	PROXMOX_API_AUTH_TARGET = "access/ticket"
-	PROXMOX_API_TOKEN_LIFETIME = 120
-	PROXMOX_API_TOKEN_UPDATEBEFORE = 5
+	HTTP_TIMEOUT = 5
+	API_TARGET = "/api2/json/"
+	API_AUTH_TARGET = "access/ticket"
+	API_TOKEN_LIFETIME = 120
+	API_TOKEN_UPDATEBEFORE = 5
 )
+
+type APICaller interface {
+	fillParent(v interface{},parent interface{})
+}
 
 type APITarget string
 
@@ -30,7 +34,7 @@ type ProxmoxVersionInfo struct {
 }
 
 type BasicObject struct {
-	px *Proxmox `json:"-"`
+	parent interface{} `json:"-"`
 }
 
 type Proxmox struct {
@@ -52,7 +56,7 @@ func New(host,port,user,pass,realm string) (*Proxmox,error) {
 
 	client := &http.Client{
 		Transport: tr,
-		Timeout: PROXMOX_HTTP_TIMEOUT * time.Second,
+		Timeout: HTTP_TIMEOUT * time.Second,
 	}
 
 	p := &Proxmox{
@@ -74,7 +78,7 @@ func New(host,port,user,pass,realm string) (*Proxmox,error) {
 }
 
 func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]byte,int,error){
-	if time.Since(px.ticketTime) <= PROXMOX_API_TOKEN_UPDATEBEFORE {
+	if time.Since(px.ticketTime) <= API_TOKEN_UPDATEBEFORE {
 		err := px.updateTicket()
 		if err != nil {
 			return nil, 0, err
@@ -91,7 +95,7 @@ func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]
 		request.Header.Add("CSRFPreventionToken",px.csrftoken)
 	}
 
-	cookieExpire := px.ticketTime.Add(time.Duration(PROXMOX_API_TOKEN_LIFETIME) * time.Minute)
+	cookieExpire := px.ticketTime.Add(time.Duration(API_TOKEN_LIFETIME) * time.Minute)
 	cookie := &http.Cookie{
 		Name: "PVEAuthCookie",
 		Value: px.ticket,
@@ -121,13 +125,13 @@ func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]
 
 }
 
-func (px *Proxmox) APICall2(method string, target string, data url.Values, result interface{}) (int, error) {
+func (px *Proxmox) APICall2(method string, target string, data url.Values, result interface{}, ac APICaller) (int, error) {
 	apitarget,err := px.makeAPITarget(target)
 	if err != nil {
 		return 0, err
 	}
 
-	responseData, httpCode, err := px.APICall("GET", apitarget, data)
+	responseData, httpCode, err := px.APICall(method, apitarget, data)
 	if err != nil {
 		return 0, err
 	}
@@ -136,7 +140,7 @@ func (px *Proxmox) APICall2(method string, target string, data url.Values, resul
 	}
 
 
-	jsonErr := px.dataUnmarshal(responseData, result)
+	jsonErr := px.dataUnmarshal(responseData, result, ac)
 
 	if jsonErr != nil {
 		return httpCode, jsonErr
@@ -155,7 +159,7 @@ func (px *Proxmox) makeAPITarget(path string) (APITarget, error){
 		return APITarget(""), err
 	}
 
-	u.Path = PROXMOX_API_TARGET + path
+	u.Path = API_TARGET + path
 
 	urlStr := fmt.Sprintf("%v", u)
 
@@ -169,7 +173,7 @@ func (px *Proxmox) updateTicket() (error){
 	var csrftoken, ticket string
 	var privs map[string]interface{}
 
-	authTarget, err := px.makeAPITarget(PROXMOX_API_AUTH_TARGET)
+	authTarget, err := px.makeAPITarget(API_AUTH_TARGET)
 
 	if err != nil {
 		return err
@@ -227,8 +231,10 @@ func (px *Proxmox) updateTicket() (error){
 	return nil
 }
 
-func (px *Proxmox) dataUnmarshal(body []byte, v interface{}) error {
+func (px *Proxmox) dataUnmarshal(body []byte, v interface{}, ac APICaller) error {
 	var f map[string]interface{}
+
+	fmt.Printf("%v\n",string(body))
 
 	err := json.Unmarshal(body, &f)
 	if err != nil {
@@ -245,23 +251,26 @@ func (px *Proxmox) dataUnmarshal(body []byte, v interface{}) error {
 		return mErr
 	}
 
-	px.fillBasic(v)
+	if ac!=nil {
+		ac.fillParent(v,px)
+	}
+
 	return nil
 }
 
-func (px *Proxmox) fillBasic(v interface{}) {
+func (px *Proxmox) fillParent(v interface{}, parent interface{}) {
 	rvt := reflect.TypeOf(v).Elem()
 	rvv := reflect.ValueOf(v).Elem()
 
 	switch rvt.Kind() {
 	case reflect.Slice:
 		for i:=0; i<rvv.Len(); i++ {
-			px.fillBasic(rvv.Index(i).Addr().Interface())
+			px.fillParent(rvv.Index(i).Addr().Interface(),parent)
 		}
 	case reflect.Struct:
 		value := rvv.FieldByName("BasicObject")
 		if value.CanSet() {
-			value.Set(reflect.ValueOf(BasicObject{px: px}))
+			value.Set(reflect.ValueOf(BasicObject{parent: parent}))
 		}
 	default:
 	}
@@ -285,7 +294,7 @@ func (px *Proxmox) GetProxmoxVersion() (*ProxmoxVersionInfo,error) {
 
 	var versionInfo ProxmoxVersionInfo
 
-	jsonErr := px.dataUnmarshal(responseData, &versionInfo)
+	jsonErr := px.dataUnmarshal(responseData, &versionInfo,px)
 
 	if jsonErr != nil {
 		return nil, jsonErr
@@ -310,7 +319,7 @@ func (px *Proxmox) GetNodes()([]Node, error) {
 
 	var nodes []Node
 
-	jsonErr := px.dataUnmarshal(responseData, &nodes)
+	jsonErr := px.dataUnmarshal(responseData, &nodes,px)
 
 	if jsonErr != nil {
 		return nil, jsonErr
@@ -335,7 +344,7 @@ func (px *Proxmox) GetStorages()([]Storage,error){
 
 	var storages []Storage
 
-	jsonErr := px.dataUnmarshal(responseData, &storages)
+	jsonErr := px.dataUnmarshal(responseData, &storages,px)
 
 	if jsonErr != nil {
 		return nil, jsonErr

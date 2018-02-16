@@ -24,10 +24,10 @@ const (
 
 type LxcBase struct {
 	Cpu float64 	`json:"cpu"`
-	Cpus int 		`json:"cpus,string"`
+	Cpus int 		`json:"cpus"`
 	Disk int64		`json:"disk"`
-	DiskRead int64	`json:"diskread,string"`
-	DiskWrite int64	`json:"diskwrite,string"`
+	DiskRead interface{}	`json:"diskread,omitempty"`
+	DiskWrite interface{}   `json:"diskwrite,omitempty"`
 	MaxDisk	int64	`json:"maxdisk"`
 	MaxMem	int64	`json:"maxmem"`
 	MaxSwap int64	`json:"maxswap"`

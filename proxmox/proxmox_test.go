@@ -12,7 +12,7 @@ const (
 	TEST_PROXMOX_VMID = 999
 )
 
-var DEBUG_TESTS bool = true
+var DEBUG_TESTS = true
 var server *Proxmox
 
 func TestMain(m *testing.M) {
@@ -278,11 +278,11 @@ func TestProxmox_dataUnmarshal(t *testing.T) {
 				host:       tt.fields.host,
 				port:       tt.fields.port,
 			}
-			if err := px.dataUnmarshal(tt.args.body, &tt.args.v); (err != nil) != tt.wantErr {
+			if err := px.dataUnmarshal(tt.args.body, &tt.args.v, px); (err != nil) != tt.wantErr {
 				t.Errorf("Proxmox.dataUnmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if tt.args.v[0].px.host != "localhost" {
+			if tt.args.v[0].parent.(*Proxmox).host != "localhost" {
 				t.Error("Proxmox.dataUnmarshal() error = Unmarshalled object not filled with Basics")
 			}
 		})

@@ -23,6 +23,10 @@ type Node struct {
 	BasicObject
 }
 
+func (n *Node) fillParent(v interface{}, parent interface{}) {
+	n.parent.(*Proxmox).fillParent(v, n)
+}
+
 func (n *Node) GetStorageList() ([]Storage,error){
 
 
@@ -30,7 +34,7 @@ func (n *Node) GetStorageList() ([]Storage,error){
 
 	var storageList []Storage
 
-	httpCode, err := n.px.APICall2("GET", target, nil, &storageList)
+	httpCode, err := n.parent.(*Proxmox).APICall2("GET", target, nil, &storageList,n)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +51,7 @@ func (n *Node) GetLxcList() ([]Lxc,error) {
 
 	var lxcList []Lxc
 
-	httpCode, err := n.px.APICall2("GET", target, nil, &lxcList)
+	httpCode, err := n.parent.(*Proxmox).APICall2("GET", target, nil, &lxcList, n)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +84,12 @@ func (n *Node) RemoveLxc(vmid int64) (*TaskID, error) {
 
 	target := "nodes/" + n.Node + "/lxc/" + strconv.Itoa(int(vmid))
 
-	apitarget,err := n.px.makeAPITarget(target)
+	apitarget,err := n.parent.(*Proxmox).makeAPITarget(target)
 	if err != nil {
 		return nil, err
 	}
 
-	responseData, httpCode, err := n.px.APICall("DELETE", apitarget, nil)
+	responseData, httpCode, err := n.parent.(*Proxmox).APICall("DELETE", apitarget, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +100,7 @@ func (n *Node) RemoveLxc(vmid int64) (*TaskID, error) {
 
 	var taskID TaskID
 
-	jsonErr := n.px.dataUnmarshal(responseData,&taskID)
+	jsonErr := n.parent.(*Proxmox).dataUnmarshal(responseData,&taskID,nil)
 	if jsonErr != nil {
 		return nil, jsonErr
 	}
@@ -112,14 +116,14 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	target := "nodes/" + n.Node + "/lxc"
 
-	apitarget,err := n.px.makeAPITarget(target)
+	apitarget,err := n.parent.(*Proxmox).makeAPITarget(target)
 	if err != nil {
 		return nil,err
 	}
 
 	data := lxcParams.GetUrlDataValues()
 
-	responseData, httpCode, err := n.px.APICall("POST", apitarget, data)
+	responseData, httpCode, err := n.parent.(*Proxmox).APICall("POST", apitarget, data)
 	if err != nil {
 		return nil,err
 	}
@@ -130,7 +134,7 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	var taskID TaskID
 
-	jsonErr := n.px.dataUnmarshal(responseData,&taskID)
+	jsonErr := n.parent.(*Proxmox).dataUnmarshal(responseData,&taskID,nil)
 	if jsonErr != nil {
 		return nil,jsonErr
 	}
@@ -144,7 +148,7 @@ func (n *Node) GetTasks() ([]Task, error) {
 
 	var tasks []Task
 
-	httpCode, err := n.px.APICall2("GET", target, nil, &tasks)
+	httpCode, err := n.parent.(*Proxmox).APICall2("GET", target, nil, &tasks, n)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package proxmox
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -43,10 +44,10 @@ func TestLxcConfigReceiver_Parse(t *testing.T) {
 				Net0:    "name=eth0,bridge=vmbr0,firewall=1,hwaddr=2A:DC:21:F5:39:46,ip=dhcp,tag=12,type=veth",
 				Startup: "order=1,up=120,down=120",
 			},
-			want:LxcConfig{
-				MountPoints: []MountPoint{{Index: 1, Volume:"local:999/vm-999-disk-1.raw",Path:"test", BaseStorageItem: BaseStorageItem{Size:8}}},
-				Networks: []NetworkConfig{{Index:0, Name: "eth0", Bridge:"vmbr0",Firewall:true, HWAddr: "2A:DC:21:F5:39:46", IPAddress:"dhcp", Tag: 12,Type:"veth"}},
-				Startup: StartupConfig{Order:1,UpDelay:120,DownDelay:120},
+			want: LxcConfig{
+				MountPoints: []MountPoint{{Index: 1, Volume: "local:999/vm-999-disk-1.raw", Path: "test", BaseStorageItem: BaseStorageItem{Size: 8}}},
+				Networks:    []NetworkConfig{{Index: 0, Name: "eth0", Bridge: "vmbr0", Firewall: true, HWAddr: "2A:DC:21:F5:39:46", IPAddress: "dhcp", Tag: 12, Type: "veth"}},
+				Startup:     StartupConfig{Order: 1, UpDelay: 120, DownDelay: 120},
 			},
 		},
 		// TODO: Add test cases.
@@ -84,7 +85,7 @@ func TestLxcConfigReceiver_Parse(t *testing.T) {
 				t.Logf("%v", got)
 			}
 
-			if !reflect.DeepEqual(*got,tt.want) {
+			if !reflect.DeepEqual(*got, tt.want) {
 				t.Errorf("LxcConfigReceiver.Parse() = %v, want %v", got, tt.want)
 			}
 		})
@@ -96,14 +97,14 @@ func TestStartupConfig_SetFromString(t *testing.T) {
 		str string
 	}
 	tests := []struct {
-		name   string
-		args   args
-		want   StartupConfig
+		name string
+		args args
+		want StartupConfig
 	}{
 		{
 			name: "StartupConfig.SetFromString() test",
-			args: args{ str: "order=1,up=120,down=120" },
-			want: StartupConfig{ Order: 1, UpDelay: 120, DownDelay: 120 },
+			args: args{str: "order=1,up=120,down=120"},
+			want: StartupConfig{Order: 1, UpDelay: 120, DownDelay: 120},
 		},
 	}
 	for _, tt := range tests {
@@ -112,9 +113,9 @@ func TestStartupConfig_SetFromString(t *testing.T) {
 			sc.SetFromString(tt.args.str)
 
 			if DEBUG_TESTS {
-				t.Logf("%v\n",sc)
+				t.Logf("%v\n", sc)
 			}
-			if !reflect.DeepEqual(sc,tt.want) {
+			if !reflect.DeepEqual(sc, tt.want) {
 				t.Errorf("StartupConfig.SetFromString() = %v, want %v", sc, tt.want)
 			}
 		})
@@ -172,18 +173,18 @@ func TestMountPoint_SetFromString(t *testing.T) {
 		str string
 	}
 	tests := []struct {
-		name   string
-		args   args
-		want   MountPoint
+		name string
+		args args
+		want MountPoint
 	}{
 		{
 			name: "MountPoint.SetFromString() test",
-			args: args{ idx: 0, str: "local:999/vm-999-disk-2.raw,mp=/var/lib/vz/1,size=8G"},
+			args: args{idx: 0, str: "local:999/vm-999-disk-2.raw,mp=/var/lib/vz/1,size=8G"},
 			want: MountPoint{
-				Index: 0,
-				Volume: "local:999/vm-999-disk-2.raw",
-				Path: "/var/lib/vz/1",
-				BaseStorageItem: BaseStorageItem{ Size: 8 },
+				Index:           0,
+				Volume:          "local:999/vm-999-disk-2.raw",
+				Path:            "/var/lib/vz/1",
+				BaseStorageItem: BaseStorageItem{Size: 8},
 			},
 		},
 	}
@@ -193,10 +194,10 @@ func TestMountPoint_SetFromString(t *testing.T) {
 			mp.SetFromString(tt.args.idx, tt.args.str)
 
 			if DEBUG_TESTS {
-				t.Logf("%v\n",mp)
+				t.Logf("%v\n", mp)
 			}
 
-			if  !reflect.DeepEqual(mp,tt.want) {
+			if !reflect.DeepEqual(mp, tt.want) {
 				t.Errorf("MountPoint.SetFromString() = %v, want %v", mp, tt.want)
 			}
 		})
@@ -215,14 +216,14 @@ func TestStartupConfig_String(t *testing.T) {
 		want   string
 	}{
 		{
-			name:"StartupConfig.String() test1",
-			fields: fields{ Order: 1, UpDelay: 120, DownDelay:120},
-			want: "order=1,up=120,down=120",
+			name:   "StartupConfig.String() test1",
+			fields: fields{Order: 1, UpDelay: 120, DownDelay: 120},
+			want:   "order=1,up=120,down=120",
 		},
 		{
-			name:"StartupConfig.String() test2",
-			fields: fields{ Order: 1, DownDelay:120},
-			want: "order=1,down=120",
+			name:   "StartupConfig.String() test2",
+			fields: fields{Order: 1, DownDelay: 120},
+			want:   "order=1,down=120",
 		},
 	}
 	for _, tt := range tests {
@@ -236,7 +237,7 @@ func TestStartupConfig_String(t *testing.T) {
 			got := sc.String()
 
 			if DEBUG_TESTS {
-				t.Logf("%v\n",got)
+				t.Logf("%v\n", got)
 			}
 
 			if got != tt.want {
@@ -319,7 +320,7 @@ func TestNetworkConfig_String(t *testing.T) {
 			}
 			got := nc.String()
 			if DEBUG_TESTS {
-				t.Logf("%v\n",got)
+				t.Logf("%v\n", got)
 			}
 
 			if got != tt.want {
@@ -342,14 +343,14 @@ func TestMountPoint_String(t *testing.T) {
 		want   string
 	}{
 		{
-			name:"MountPoint.String() test1",
-			fields: fields{ Index:0, Volume:"local:999/vm-999-disk-2.raw",Path:"/var/lib/vz/1", BaseStorageItem:BaseStorageItem{Size:8}},
-			want: "local:999/vm-999-disk-2.raw,mp=/var/lib/vz/1,size=8G",
+			name:   "MountPoint.String() test1",
+			fields: fields{Index: 0, Volume: "local:999/vm-999-disk-2.raw", Path: "/var/lib/vz/1", BaseStorageItem: BaseStorageItem{Size: 8}},
+			want:   "local:999/vm-999-disk-2.raw,mp=/var/lib/vz/1,size=8G",
 		},
 		{
-			name:"MountPoint.String() test2",
-			fields: fields{ Index:0, Volume:"local:8"},
-			want: "local:8",
+			name:   "MountPoint.String() test2",
+			fields: fields{Index: 0, Volume: "local:8"},
+			want:   "local:8",
 		},
 	}
 	for _, tt := range tests {
@@ -364,11 +365,158 @@ func TestMountPoint_String(t *testing.T) {
 			got := mp.String()
 
 			if DEBUG_TESTS {
-				t.Logf("%v\n",got)
+				t.Logf("%v\n", got)
 			}
 
-			if  got != tt.want {
+			if got != tt.want {
 				t.Errorf("MountPoint.String() = %v, want %v", got, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestLxc_Start(t *testing.T) {
+	type fields struct {
+		Pid         int
+		LxcBase     LxcBase
+		BasicObject BasicObject
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *TaskID
+		wantErr bool
+	}{
+		{
+			name:    "Lxc.Start() test",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
+
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			got, err := lxc.Start(false)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Lxc.Start() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if DEBUG_TESTS {
+				t.Logf("Lxc: %v\n", *got)
+			}
+
+			if strings.Index(string(*got), nodes[0].Node) <= 0 {
+				t.Errorf("Node.RemoveLxc() = %v", got)
+			}
+		})
+	}
+}
+
+func TestLxc_Stop(t *testing.T) {
+	type fields struct {
+		Pid         int
+		LxcBase     LxcBase
+		BasicObject BasicObject
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *TaskID
+		wantErr bool
+	}{
+		{
+			name:    "Lxc.Stop() test",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
+
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			got, err := lxc.Stop(false)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Lxc.Stop() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if DEBUG_TESTS {
+				t.Logf("Lxc: %v\n", *got)
+			}
+
+			if strings.Index(string(*got), nodes[0].Node) <= 0 {
+				t.Errorf("Node.RemoveLxc() = %v", got)
+			}
+		})
+	}
+}
+
+func TestLxc_Shutdown(t *testing.T) {
+	type fields struct {
+		Pid         int
+		LxcBase     LxcBase
+		BasicObject BasicObject
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *TaskID
+		wantErr bool
+	}{
+		{
+			name:    "Lxc.Shutdown() test",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
+
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+
+			got, err := lxc.Shutdown(false,0)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Lxc.Shutdown() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if DEBUG_TESTS {
+				t.Logf("Lxc: %v\n", *got)
+			}
+
+			if strings.Index(string(*got), nodes[0].Node) <= 0 {
+				t.Errorf("Node.RemoveLxc() = %v", got)
 			}
 		})
 	}

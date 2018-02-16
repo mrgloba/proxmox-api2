@@ -41,7 +41,7 @@ func (t *Task) GetStatus() (*TaskStatus,error){
 
 	var taskStatus TaskStatus
 
-	httpCode, err := t.px.APICall2("GET", target, nil, &taskStatus)
+	httpCode, err := t.parent.(*Node).parent.(*Proxmox).APICall2("GET", target, nil, &taskStatus,nil)
 	if err != nil {
 		return nil, err
 	}

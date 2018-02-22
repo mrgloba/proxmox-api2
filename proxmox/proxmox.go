@@ -328,6 +328,20 @@ func (px *Proxmox) GetNodes()([]Node, error) {
 	return nodes, nil
 }
 
+func (px *Proxmox) GetNode(nodeName string) (*Node, error){
+	nodes, err := px.GetNodes()
+
+	if err != nil { return nil, err}
+
+	for _,v:= range nodes {
+		if v.Node == nodeName {
+			return &v,nil
+		}
+	}
+
+	return nil, errors.New("node not found")
+}
+
 func (px *Proxmox) GetStorages()([]Storage,error){
 	target,err := px.makeAPITarget("storage")
 	if err != nil {

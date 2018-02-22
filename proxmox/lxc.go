@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 
@@ -128,6 +129,24 @@ func (lxc *Lxc) GetStatus() (*LxcStatus, error) {
 	return &lxcStatus, nil
 }
 
+func (lxc *Lxc) WaitForStatus(status string, timeout int) (bool,*LxcStatus, error) {
+	var lxcStatus *LxcStatus
+	var err error
+	t:=60
+	if timeout > 0 {
+		t = timeout
+	}
+	for i:=0; i <= t; i++ {
+		lxcStatus, err = lxc.GetStatus()
+		if err != nil { return false,nil, err}
+		if lxcStatus.Status == status {
+			return true,lxcStatus, nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	return false, lxcStatus, errors.New("timeout reached, status not get")
+}
 
 func (clp *LxcConfig) Validate() error {
 	if clp.Arch != "" && clp.Arch != LXC_ARCH_AMD64 && clp.Arch != LXC_ARCH_I386 {

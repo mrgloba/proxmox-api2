@@ -56,16 +56,18 @@ func (t *Task) GetStatus() (*TaskStatus,error){
 func (t *Task) WaitForStatus(status string, timeout int) (bool,*TaskStatus,error){
 	var taskStatus *TaskStatus
 	var err error
-	for i:=0; i<timeout; i++ {
+	to:=60
+	if timeout > 0 {
+		to = timeout
+	}
+	for i:=0; i<to; i++ {
 		taskStatus,err = t.GetStatus()
-		if err !=nil {
-			return false,nil,err
-		}
+		if err !=nil { return false,nil,err }
 		if taskStatus.Status == status {
 			return true,taskStatus,nil
 		}
 		time.Sleep(1 * time.Second)
 	}
 
-	return false, taskStatus,errors.New("Timeout reached, status not get")
+	return false, taskStatus,errors.New("timeout reached, status not get")
 }

@@ -180,7 +180,7 @@ func (n *Node) GetTasks() ([]Task, error) {
 	return tasks, nil
 }
 
-func (n *Node) ScanUsb() ([]USBDevice, error) {
+func (n *Node) ScanUSB() ([]USBDevice, error) {
 	target := "nodes/" + n.Node + "/scan/usb"
 	var devices []USBDevice
 

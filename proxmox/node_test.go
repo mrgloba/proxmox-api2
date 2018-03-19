@@ -263,7 +263,7 @@ func TestNode_GetTasks(t *testing.T) {
 	}
 }
 
-func TestNode_ScanUsb(t *testing.T) {
+func TestNode_ScanUSB(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -277,7 +277,7 @@ func TestNode_ScanUsb(t *testing.T) {
 				t.Log(err.Error())
 				return
 			}
-			got, err := nodes[0].ScanUsb()
+			got, err := nodes[0].ScanUSB()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Node.ScanUsb() error = %v, wantErr %v", err, tt.wantErr)
 				return

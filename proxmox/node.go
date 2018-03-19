@@ -23,6 +23,26 @@ type Node struct {
 	BasicObject
 }
 
+type USBDevice struct {
+	Busnum int			`json:"busnum"`
+	Class int			`json:"class"`
+	Devnum int			`json:"devnum"`
+	Level int			`json:"level"`
+	Manufacturer string `json:"manufacturer"`
+	Port int			`json:"port"`
+	Prodid string		`json:"prodid"`
+	Product string		`json:"product"`
+	Speed string		`json:"speed"`
+	Usbpath string		`json:"usbpath"`
+	Vendid string		`json:"vendid"`
+}
+
+type LVMVolumeGroup struct {
+	Free int64 `json:"free"`
+	Size int64 `json:"size"`
+	VG string  `json:"vg"`
+}
+
 func (n *Node) fillParent(v interface{}, parent interface{}) {
 	n.parent.(*Proxmox).fillParent(v, n)
 }
@@ -160,3 +180,32 @@ func (n *Node) GetTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+func (n *Node) ScanUsb() ([]USBDevice, error) {
+	target := "nodes/" + n.Node + "/scan/usb"
+	var devices []USBDevice
+
+	httpCode, err := n.parent.(*Proxmox).APICall2("GET", target, nil, &devices, nil)
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return devices,nil
+}
+
+func (n *Node) ScanLVM() ([]LVMVolumeGroup, error) {
+	target := "nodes/" + n.Node + "/scan/lvm"
+	var groups []LVMVolumeGroup
+
+	httpCode, err := n.parent.(*Proxmox).APICall2("GET", target, nil, &groups, nil)
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+	return groups,nil
+}

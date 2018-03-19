@@ -229,14 +229,13 @@ func TestNode_RemoveLxc(t *testing.T) {
 	}
 }
 
-
 func TestNode_GetTasks(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
 	}{
 		{
-			name:"Node.GetTasks() test",
+			name:    "Node.GetTasks() test",
 			wantErr: false,
 		},
 	}
@@ -259,6 +258,36 @@ func TestNode_GetTasks(t *testing.T) {
 
 			if len(got) == 0 {
 				t.Errorf("Node.GetTasks() = %v", got)
+			}
+		})
+	}
+}
+
+func TestNode_ScanUsb(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		{ name: "Node.ScanUSB test", wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+			got, err := nodes[0].ScanUsb()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Node.ScanUsb() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if DEBUG_TESTS {
+				t.Logf("%v\n", got)
+			}
+
+			if len(got) == 0 {
+				t.Errorf("Node.ScanUsb() = %v", got)
 			}
 		})
 	}

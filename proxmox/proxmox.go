@@ -234,8 +234,6 @@ func (px *Proxmox) updateTicket() (error){
 func (px *Proxmox) dataUnmarshal(body []byte, v interface{}, ac APICaller) error {
 	var f map[string]interface{}
 
-	fmt.Printf("%v\n",string(body))
-
 	err := json.Unmarshal(body, &f)
 	if err != nil {
 		return err

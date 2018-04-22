@@ -78,7 +78,7 @@ func New(host,port,user,pass,realm string) (*Proxmox,error) {
 }
 
 func (px *Proxmox) APICall(method string, target APITarget, data url.Values) ([]byte,int,error){
-	if time.Since(px.ticketTime) <= API_TOKEN_UPDATEBEFORE {
+	if time.Since(px.ticketTime) >= time.Duration(API_TOKEN_LIFETIME - API_TOKEN_UPDATEBEFORE) {
 		err := px.updateTicket()
 		if err != nil {
 			return nil, 0, err

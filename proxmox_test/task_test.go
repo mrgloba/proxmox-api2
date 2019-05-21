@@ -1,8 +1,9 @@
-package proxmox
+package proxmox_test
 
 import (
 	"reflect"
 	"testing"
+	. "github.com/mrgloba/proxmox-api2/proxmox"
 )
 
 func TestTask_GetStatus(t *testing.T) {
@@ -21,7 +22,7 @@ func TestTask_GetStatus(t *testing.T) {
 			name: "Task.GetStatus() test",
 			fields: fields{
 				BaseTask:    BaseTask{UPid: "UPID:utm-other:0000530F:1DF56C3C:5A7DCCE8:vzdestroy:999:root@pam:"},
-				BasicObject: BasicObject{parent: server},
+				BasicObject: NewBasicObject(server),
 			},
 			want: TaskStatus{
 				ExitStatus: "OK",
@@ -86,7 +87,7 @@ func TestTask_WaitForStatus(t *testing.T) {
 			name: "Task.WaitForStatus() test",
 			fields: fields{
 				BaseTask:    BaseTask{UPid: "UPID:utm-other:0000530F:1DF56C3C:5A7DCCE8:vzdestroy:999:root@pam:"},
-				BasicObject: BasicObject{parent: server},
+				BasicObject: NewBasicObject(server),
 			},
 			args:args{ status:"stopped", timeout:10},
 			want: true,

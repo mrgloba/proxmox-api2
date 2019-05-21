@@ -24,7 +24,7 @@ const (
 
 type LxcBase struct {
 	Cpu float64 	`json:"cpu"`
-	Cpus int 		`json:"cpus"`
+	Cpus interface{} 		`json:"cpus"`
 	Disk int64		`json:"disk"`
 	DiskRead interface{}	`json:"diskread,omitempty"`
 	DiskWrite interface{}   `json:"diskwrite,omitempty"`

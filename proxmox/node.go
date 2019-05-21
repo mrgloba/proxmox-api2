@@ -3,9 +3,22 @@ package proxmox
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 )
 
+
+const (
+	BACKUP_MODE_SNAPSHOT BackupMode = 0
+	BACKUP_MODE_SUSPEND BackupMode = 1
+	BACKUP_MODE_STOP BackupMode = 2
+	BACKUP_COMP_LZO BackupComp = 0
+	BACKUP_COMP_GZIP BackupComp = 1
+)
+
+
+type BackupComp int
+type BackupMode int
 
 type Node struct {
 	Cpu float64			`json:"cpu"`
@@ -41,6 +54,33 @@ type LVMVolumeGroup struct {
 	Free int64 `json:"free"`
 	Size int64 `json:"size"`
 	VG string  `json:"vg"`
+}
+
+func (bm BackupMode) String() string {
+	strvalue := [...]string{
+		"snapshot",
+		"suspend",
+		"stop",
+	}
+
+	if bm < BACKUP_MODE_SNAPSHOT || bm > BACKUP_MODE_STOP {
+		return "unknown"
+	}
+
+	return strvalue[bm]
+}
+
+func (bc BackupComp) String() string {
+	strvalue := [...]string{
+		"lzo",
+		"gzip",
+	}
+
+	if bc < BACKUP_COMP_LZO || bc > BACKUP_COMP_GZIP {
+		return "unknown"
+	}
+
+	return strvalue[bc]
 }
 
 func (n *Node) fillParent(v interface{}, parent interface{}) {
@@ -104,7 +144,7 @@ func (n *Node) RemoveLxc(vmid int64) (*TaskID, error) {
 
 	target := "nodes/" + n.Node + "/lxc/" + strconv.Itoa(int(vmid))
 
-	apitarget,err := n.parent.(*Proxmox).makeAPITarget(target)
+	apitarget,err := n.GetProxmox().MakeAPITarget(target)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +160,7 @@ func (n *Node) RemoveLxc(vmid int64) (*TaskID, error) {
 
 	var taskID TaskID
 
-	jsonErr := n.parent.(*Proxmox).dataUnmarshal(responseData,&taskID,nil)
+	jsonErr := n.GetProxmox().DataUnmarshal(responseData,&taskID,nil)
 	if jsonErr != nil {
 		return nil, jsonErr
 	}
@@ -136,7 +176,7 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	target := "nodes/" + n.Node + "/lxc"
 
-	apitarget,err := n.parent.(*Proxmox).makeAPITarget(target)
+	apitarget,err := n.GetProxmox().MakeAPITarget(target)
 	if err != nil {
 		return nil,err
 	}
@@ -154,13 +194,65 @@ func (n *Node) CreateLxc(lxcParams LxcConfig) (*TaskID, error) {
 
 	var taskID TaskID
 
-	jsonErr := n.parent.(*Proxmox).dataUnmarshal(responseData,&taskID,nil)
+	jsonErr := n.GetProxmox().DataUnmarshal(responseData,&taskID,nil)
 	if jsonErr != nil {
 		return nil,jsonErr
 	}
 
 	return &taskID, nil
 
+}
+
+func (n *Node) VZDump(vmid int64, storage Storage, mode BackupMode, comp BackupComp, remove bool) (*TaskID, error) {
+	target := "nodes/" + n.Node + "/vzdump"
+
+	apitarget,err := n.GetProxmox().MakeAPITarget(target)
+	if err != nil {
+		return nil, err
+	}
+
+
+	var data url.Values
+
+	data = make(url.Values)
+	data.Add("vmid", strconv.Itoa(int(vmid)))
+	data.Add("storage", storage.Storage)
+	data.Add("mode", mode.String())
+	data.Add("compress", comp.String())
+
+	if remove {
+		data.Add("remove", "1")
+	} else {
+		data.Add("remove", "0")
+	}
+
+
+	responseData, httpCode, err := n.parent.(*Proxmox).APICall("POST", apitarget, data)
+	if err != nil {
+		return nil, err
+	}
+	if httpCode != 200 {
+		return nil, errors.New(fmt.Sprintf("HTTP Request return error: %d",httpCode))
+	}
+
+
+	var taskID TaskID
+
+	jsonErr := n.GetProxmox().DataUnmarshal(responseData,&taskID,nil)
+	if jsonErr != nil {
+		return nil, jsonErr
+	}
+
+	return &taskID, nil
+}
+
+func (n *Node) RestoreLxc(vmid int64, storageContentItem StorageContentItem, storage string, force bool,  newLxcParams LxcConfig) (*TaskID, error) {
+	newLxcParams.VmId = vmid
+	newLxcParams.OSTemplate = storageContentItem.Volid
+	newLxcParams.Force = force
+	newLxcParams.Storage = storage
+	newLxcParams.Restore = true
+	return n.CreateLxc(newLxcParams)
 }
 
 func (n *Node) GetTasks() ([]Task, error) {

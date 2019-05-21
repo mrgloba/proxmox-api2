@@ -1,4 +1,4 @@
-package proxmox
+package proxmox_test
 
 import (
 	"net/http"
@@ -6,10 +6,27 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	. "github.com/mrgloba/proxmox-api2/proxmox"
 )
 
 const (
 	TEST_PROXMOX_VMID = 999
+	TEST_PROXMOX_HOST  = "localhost"
+	TEST_PROXMOX_PORT  = "8006"
+	TEST_PROXMOX_USER  = "testuser"
+	TEST_PROXMOX_PASS  = "testuser"
+	TEST_PROXMOX_REALM = "pve"
+
+	TEST_PROXMOX_NODE = "pve"
+
+	TEST_PROXMOX_TEMPLATE = "local:vztmpl/debian-9.0-standard_9.0-2_amd64.tar.gz"
+	TEST_PROXMOX_STORAGE = "local-lvm"
+	TEST_PROXMOX_TEMPLATE_STORAGE = "local"
+
+	TEST_PROXMOX_RELEASE = "5"
+	TEST_PROXMOX_REPOID = "c6fdb264"
+	TEST_PROXMOX_VERSION = "5.4"
+
 )
 
 var DEBUG_TESTS = true
@@ -32,7 +49,7 @@ func setup() error {
 	return err
 }
 
-func TestProxmox_makeAPITarget(t *testing.T) {
+func TestProxmox_MakeAPITarget(t *testing.T) {
 	type fields struct {
 		host       string
 		port       string
@@ -59,33 +76,21 @@ func TestProxmox_makeAPITarget(t *testing.T) {
 		{
 			name: "Make API target URL",
 			fields: fields{
-				host: "localhost",
-				port: "8006",
+				host: TEST_PROXMOX_HOST,
+				port: TEST_PROXMOX_PORT,
 			},
 			args: args{
 				path: "test/path",
 			},
-			want:    APITarget("https://localhost:8006/api2/json/test/path"),
+			want:    APITarget("https://" + TEST_PROXMOX_HOST + ":" + TEST_PROXMOX_PORT + "/api2/json/test/path"),
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			px := &Proxmox{
-				host:       tt.fields.host,
-				port:       tt.fields.port,
-				user:       tt.fields.user,
-				pass:       tt.fields.pass,
-				realm:      tt.fields.realm,
-				ticket:     tt.fields.ticket,
-				csrftoken:  tt.fields.csrftoken,
-				privs:      tt.fields.privs,
-				ticketTime: tt.fields.ticketTime,
-				Client:     tt.fields.Client,
-			}
-			got, err := px.makeAPITarget(tt.args.path)
+
+			got, err := server.MakeAPITarget(tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Proxmox.makeAPITarget() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -122,7 +127,6 @@ func TestNew(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -132,7 +136,7 @@ func TestNew(t *testing.T) {
 				return
 			}
 
-			if len(got.ticket) == 0 {
+			if len(got.GetAuthTicket()) == 0 {
 				t.Errorf("New() ticket is not set")
 				return
 			}
@@ -149,13 +153,12 @@ func TestProxmox_GetProxmoxVersion(t *testing.T) {
 		{
 			name: "Get proxmox version info",
 			want: &ProxmoxVersionInfo{
-				Release: "18",
-				Repoid:  "ef2610e8",
-				Version: "4.4",
+				Release: TEST_PROXMOX_RELEASE,
+				Repoid:  TEST_PROXMOX_REPOID,
+				Version: TEST_PROXMOX_VERSION,
 			},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -183,7 +186,7 @@ func TestProxmox_GetNodes(t *testing.T) {
 				if len(got) == 0 {
 					return false
 				}
-				if got[0].Node != "utm-other" {
+				if got[0].Node != TEST_PROXMOX_NODE {
 					return false
 				} else {
 					return true
@@ -191,7 +194,6 @@ func TestProxmox_GetNodes(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -233,7 +235,7 @@ func TestProxmox_GetStorages(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := server.GetStorages()
+			got, err := server.GetStorageList()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Proxmox.GetStorages() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -246,7 +248,7 @@ func TestProxmox_GetStorages(t *testing.T) {
 	}
 }
 
-func TestProxmox_dataUnmarshal(t *testing.T) {
+func TestProxmox_DataUnmarshal(t *testing.T) {
 	type fields struct {
 		host       string
 		port       string
@@ -270,20 +272,15 @@ func TestProxmox_dataUnmarshal(t *testing.T) {
 			},
 			wantErr: false,
 		},
-	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			px := &Proxmox{
-				host:       tt.fields.host,
-				port:       tt.fields.port,
-			}
-			if err := px.dataUnmarshal(tt.args.body, &tt.args.v, px); (err != nil) != tt.wantErr {
-				t.Errorf("Proxmox.dataUnmarshal() error = %v, wantErr %v", err, tt.wantErr)
+			if err := server.DataUnmarshal(tt.args.body, &tt.args.v, server); (err != nil) != tt.wantErr {
+				t.Errorf("Proxmox.DataUnmarshal() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if tt.args.v[0].parent.(*Proxmox).host != "localhost" {
-				t.Error("Proxmox.dataUnmarshal() error = Unmarshalled object not filled with Basics")
+			if tt.args.v[0].GetProxmox().GetHost() != TEST_PROXMOX_HOST {
+				t.Error("Proxmox.DataUnmarshal() error = Unmarshalled object not filled with Basics")
 			}
 		})
 	}

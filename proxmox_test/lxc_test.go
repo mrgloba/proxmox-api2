@@ -1,9 +1,10 @@
-package proxmox
+package proxmox_test
 
 import (
 	"reflect"
 	"strings"
 	"testing"
+	. "github.com/mrgloba/proxmox-api2/proxmox"
 )
 
 func TestLxcConfigReceiver_Parse(t *testing.T) {
@@ -50,7 +51,6 @@ func TestLxcConfigReceiver_Parse(t *testing.T) {
 				Startup:     StartupConfig{Order: 1, UpDelay: 120, DownDelay: 120},
 			},
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -405,7 +405,7 @@ func TestLxc_Start(t *testing.T) {
 			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
 
 			if err != nil {
-				t.Log(err.Error())
+				t.Errorf(err.Error())
 				return
 			}
 
@@ -454,7 +454,7 @@ func TestLxc_Stop(t *testing.T) {
 			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
 
 			if err != nil {
-				t.Log(err.Error())
+				t.Errorf(err.Error())
 				return
 			}
 
@@ -502,7 +502,7 @@ func TestLxc_Shutdown(t *testing.T) {
 			lxc, err := nodes[0].GetLxc(TEST_PROXMOX_VMID)
 
 			if err != nil {
-				t.Log(err.Error())
+				t.Errorf(err.Error())
 				return
 			}
 
@@ -521,3 +521,4 @@ func TestLxc_Shutdown(t *testing.T) {
 		})
 	}
 }
+

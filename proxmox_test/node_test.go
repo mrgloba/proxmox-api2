@@ -1,9 +1,10 @@
-package proxmox
+package proxmox_test
 
 import (
 	"strconv"
 	"strings"
 	"testing"
+	. "github.com/mrgloba/proxmox-api2/proxmox"
 )
 
 func TestNode_GetStorageList(t *testing.T) {
@@ -15,7 +16,6 @@ func TestNode_GetStorageList(t *testing.T) {
 			name:    "Get Storages",
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,7 +50,6 @@ func TestNode_GetLxcList(t *testing.T) {
 			name:    "GetLxcList",
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -93,7 +92,6 @@ func TestNode_GetLxc(t *testing.T) {
 			want:    101,
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -137,11 +135,11 @@ func TestNode_CreateLxc(t *testing.T) {
 						VmId:         TEST_PROXMOX_VMID,
 						Hostname:     "test1",
 						Password:     "111111",
-						OSTemplate:   "local:vztmpl/debian-9.0-standard_9.0-2_amd64.tar.gz",
-						RootFS:       "storage:10",
-						Cores:        2,
-						Memory:       2048,
-						Swap:         1024,
+						OSTemplate:   TEST_PROXMOX_TEMPLATE,
+						RootFS:       TEST_PROXMOX_STORAGE+":10",
+						Cores:        1,
+						Memory:       512,
+						Swap:         256,
 						SearchDomain: "test.loc",
 						NameServer:   "8.8.8.8",
 					},
@@ -188,6 +186,117 @@ func TestNode_CreateLxc(t *testing.T) {
 	}
 }
 
+func TestNode_VZDump(t *testing.T) {
+	type args struct {
+		vmid    int64
+		storage Storage
+		mode    BackupMode
+		comp    BackupComp
+		remove  bool
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Node.VZDump() test",
+			args:args{
+				vmid: TEST_PROXMOX_VMID,
+				storage: Storage{ Storage: TEST_PROXMOX_TEMPLATE_STORAGE },
+				mode: BACKUP_MODE_SNAPSHOT,
+				comp: BACKUP_COMP_LZO,
+				remove: true,
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Errorf(err.Error())
+				return
+			}
+
+			got,err := nodes[0].VZDump(tt.args.vmid, tt.args.storage, tt.args.mode, tt.args.comp, tt.args.remove)
+
+			if (err != nil) != tt.wantErr{
+				t.Errorf("Node.WZDump() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if DEBUG_TESTS {
+				t.Logf("%v\n", *got)
+			}
+
+			parts := strings.Split(string(*got), ":")
+			idx, _ := strconv.Atoi(parts[6])
+
+			if idx != int(tt.args.vmid) {
+				t.Errorf("Node.WZDump() test failed")
+			}
+		})
+	}
+}
+
+func TestNode_RestoreLxc(t *testing.T) {
+	type args struct {
+		vmid               int64
+		storageContentItem StorageContentItem
+		storage            string
+		force              bool
+		newLxcParams       LxcConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Node.RestoreLxc() test",
+			args: args{
+				vmid: TEST_PROXMOX_VMID,
+				storageContentItem: StorageContentItem{
+					Volid: "local:backup/vzdump-lxc-3000-2018_12_07-15_12_08.tar.lzo",
+				},
+				force: true,
+				storage: "storage",
+				newLxcParams: LxcConfig{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			nodes, err := server.GetNodes()
+			if err != nil {
+				t.Log(err.Error())
+				return
+			}
+			got, err := nodes[0].RestoreLxc(tt.args.vmid,tt.args.storageContentItem, tt.args.storage, tt.args.force,tt.args.newLxcParams)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Node.RestoreLxc() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if DEBUG_TESTS {
+				t.Logf("%v\n", *got)
+			}
+
+			parts := strings.Split(string(*got), ":")
+			idx, _ := strconv.Atoi(parts[6])
+
+			if idx != TEST_PROXMOX_VMID {
+				t.Errorf("Node.RestoreLxc() test failed")
+			}
+
+		})
+	}
+}
+
 func TestNode_RemoveLxc(t *testing.T) {
 	type args struct {
 		vmid int64
@@ -202,7 +311,6 @@ func TestNode_RemoveLxc(t *testing.T) {
 			args:    args{TEST_PROXMOX_VMID},
 			wantErr: false,
 		},
-		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
